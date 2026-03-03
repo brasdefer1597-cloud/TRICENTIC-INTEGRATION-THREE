@@ -1,0 +1,105 @@
+@import './tricentric-integration.css';
+
+:root {
+  --color-red-crudo: #f87171;
+  --color-yellow-crudo: #facc15;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #111827;
+  color: #d1d5db;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hard-truth,
+.integration-cruda {
+  background-color: #1f2937;
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.5);
+  border: 1px solid #374151;
+}
+
+.reality-card {
+  background-color: #374151;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.reality-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 15px 20px rgba(248, 113, 113, 0.1);
+}
+
+.body-card {
+  border-left: 4px solid #4ade80;
+}
+
+.heart-card {
+  border-left: 4px solid #f87171;
+}
+
+.head-card {
+  border-left: 4px solid #60a5fa;
+}
+
+.breathing-crudo {
+  animation: breathe-crudo 4s ease-in-out infinite;
+  background: radial-gradient(circle, rgba(248, 113, 113, 0.4) 0%, rgba(248, 113, 113, 0) 70%);
+}
+
+
+html {
+  scroll-behavior: smooth;
+}
+
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -4rem;
+  z-index: 100;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: #111827;
+  color: #f9fafb;
+  border: 1px solid #f87171;
+}
+
+.skip-link:focus {
+  top: 1rem;
+}
+
+.btn-quick-access {
+  border-radius: 0.5rem;
+  padding: 0.6rem 1rem;
+  color: white;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+input:focus-visible {
+  outline: 2px solid #facc15;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
