@@ -182,6 +182,50 @@ export default function TricentricIntegration({ kofiUrl }: Props) {
           {loading ? 'SAVING...' : 'CLAIM DIGITAL VERSION ON KOFI'}
         </button>
       </div>
+
+      <div className="mt-8 bg-gray-800 rounded-2xl p-8 border border-gray-700">
+        <h3 className="text-2xl font-bold text-yellow-400 mb-6 text-center">📘 Section 2 · Somatic Guide</h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+          <div className="bg-gray-900 rounded-xl p-6 border border-gray-700">
+            <h4 className="text-lg font-bold text-yellow-300 mb-4">🦶 Body Dictionary</h4>
+            <div className="space-y-3 text-sm text-gray-300">
+              <p>
+                <span className="text-red-400 mr-2">💢</span>
+                <strong className="text-red-300">Chest pressure:</strong> unspoken emotion, boundary needed.
+              </p>
+              <p>
+                <span className="text-blue-400 mr-2">🌀</span>
+                <strong className="text-blue-300">Shaky hands:</strong> blocked energy, action is waiting.
+              </p>
+              <p>
+                <span className="text-green-400 mr-2">😴</span>
+                <strong className="text-green-300">Persistent fatigue:</strong> values and daily life are misaligned.
+              </p>
+              <p>
+                <span className="text-purple-400 mr-2">🌊</span>
+                <strong className="text-purple-300">Expanded breathing:</strong> authentic alignment and confirmation.
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-gray-900 rounded-xl p-6 border border-gray-700">
+            <h4 className="text-lg font-bold text-yellow-300 mb-4">💫 Integration Example</h4>
+            <p className="text-sm text-gray-300 mb-4">
+              <strong className="text-blue-300">Head:</strong> Financial transition is viable in 6 months.
+            </p>
+            <p className="text-sm text-gray-300 mb-4">
+              <strong className="text-red-300">Heart:</strong> There is fear, but also real excitement.
+            </p>
+            <p className="text-sm text-gray-300 mb-4">
+              <strong className="text-green-300">Body:</strong> Breath opens when imagining the change.
+            </p>
+            <p className="text-sm text-yellow-200 bg-yellow-900/20 border border-yellow-700 rounded-lg p-3">
+              <strong>Integrated action:</strong> start with a gradual transition that protects stability while honoring passion.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
