@@ -2,10 +2,8 @@ import React, { useEffect, useState } from 'react';
 import HeaderSection from '@/components/sections/HeaderSection';
 import TruthsSection from '@/components/sections/TruthsSection';
 import RealityMapSection from '@/components/sections/RealityMapSection';
-import SacrificesSection from '@/components/sections/SacrificesSection';
 import ExamSection from '@/components/features/exam/ExamSection';
 import TricentricIntegration from '@/components/features/tricentric/TricentricIntegration';
-import BreathingSection from '@/components/sections/BreathingSection';
 import GamificationDashboard from '@/components/features/gamification/GamificationDashboard';
 import SeoHead from '@/components/seo/SeoHead';
 import { supabase } from '@/lib/supabase';
@@ -74,18 +72,14 @@ const HomePage: React.FC = () => {
           <section id="reality-map">
             <RealityMapSection />
           </section>
-          <section id="sacrifices">
-            <SacrificesSection />
-          </section>
+
           <section id="exam">
             <ExamSection onEvaluationComplete={refreshProfile} />
           </section>
           <section id="integration">
             <TricentricIntegration kofiUrl="https://ko-fi.com/s/7b0236c681" />
           </section>
-          <section id="breathing">
-            <BreathingSection />
-          </section>
+
         </main>
       </div>
     </>

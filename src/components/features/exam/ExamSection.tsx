@@ -20,7 +20,7 @@ const ExamSection: React.FC<ExamSectionProps> = ({ onEvaluationComplete }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const { analyze, loading: analyzing } = useAnalysis();
+  const { analyze, loading: analyzing, error: analysisError } = useAnalysis();
 
   const handleOxygenChange = (value: string) => {
     setOxygen(prev => 
@@ -90,9 +90,11 @@ const ExamSection: React.FC<ExamSectionProps> = ({ onEvaluationComplete }) => {
       const lastEvalDate = profile?.last_evaluation_date;
       const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
       const isConsecutiveDay = lastEvalDate === yesterday;
-      const newStreak = lastEvalDate === today ? profile.streak_days : (isConsecutiveDay ? profile.streak_days + 1 : 1);
+      const newStreak = lastEvalDate === today ? (profile?.streak_days || 0) : (isConsecutiveDay ? (profile?.streak_days || 0) + 1 : 1);
 
-      const xpGained = calculateXPGained(newStreak);
+      // Check for honest synthesis (simple heuristic for now)
+      const isHonest = synthesis.length > 50;
+      const xpGained = calculateXPGained(newStreak, isHonest);
       const newXP = (profile?.experience_points || 0) + xpGained;
       const newTotalEvals = (profile?.total_evaluations || 0) + 1;
 
@@ -114,11 +116,13 @@ const ExamSection: React.FC<ExamSectionProps> = ({ onEvaluationComplete }) => {
       }).eq('id', user.id);
 
       const achievementKeys = ['first_blood', 'week_warrior', 'ten_evaluations', 'level_5'];
+      if (isHonest) achievementKeys.push('honest_synthesis');
+
       for (const key of achievementKeys) {
         if (shouldUnlockAchievement(key, { totalEvaluations: newTotalEvals, currentLevel: 1, streakDays: newStreak })) {
           const { data: achievement } = await supabase.from('achievements').select('id').eq('key', key).maybeSingle();
           if (achievement) {
-            await supabase.from('user_achievements').insert({
+            await supabase.from('user_achievements').upsert({
               user_id: user.id,
               achievement_id: achievement.id,
             });
@@ -161,22 +165,28 @@ const ExamSection: React.FC<ExamSectionProps> = ({ onEvaluationComplete }) => {
           title="AI DIAGNOSIS"
           icon="🎯"
         >
-          <p className="whitespace-pre-line">{aiAnalysis}</p>
+          <p className="whitespace-pre-line text-lg font-medium tracking-tight">{aiAnalysis}</p>
         </Modal>
       )}
       <section className="py-12 px-6 max-w-4xl mx-auto">
         <h2 className="text-3xl font-bold text-center mb-8 text-red-400">🎯 SRAP EXAM - RAW REALITY</h2>
         
-        <div className="bg-gradient-to-br from-gray-900 to-black rounded-2xl p-8 border border-red-800">
+        {analysisError && (
+          <div className="mb-6 p-4 bg-red-900/50 border border-red-500 rounded-lg text-red-200 text-center">
+            {analysisError}
+          </div>
+        )}
+
+        <div className="bg-gradient-to-br from-gray-900 to-black rounded-2xl p-8 border border-red-800 shadow-2xl">
           <div className="text-center mb-8">
-            <div className="breathing-crudo w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center">
-              <span className="text-2xl">💀</span>
+            <div className="breathing-crudo w-24 h-24 rounded-full mx-auto mb-4 flex items-center justify-center">
+              <span className="text-3xl">💀</span>
             </div>
-            <p className="text-gray-400 italic mb-4">
+            <p className="text-gray-400 italic mb-4 text-lg">
               "Enlightenment is not perpetual peace. It is knowing that fear in the chest,
               mental calculation and trembling in the hands are the normal orchestra of being alive."
             </p>
-            <p className="text-yellow-400 font-semibold">
+            <p className="text-yellow-400 font-bold text-xl uppercase tracking-widest">
               Wisdom is not letting any drown the others.
             </p>
           </div>
@@ -187,12 +197,15 @@ const ExamSection: React.FC<ExamSectionProps> = ({ onEvaluationComplete }) => {
             </div>
           )}
 
-          <div className="space-y-6">
-                <div className="bg-gray-800 rounded-xl p-6">
-                    <h3 className="text-xl font-bold text-red-400 mb-4">1. RAW DIAGNOSIS</h3>
-                    <p className="text-gray-300 mb-4">Which of the three centers is bleeding MOST today?</p>
+          <div className="space-y-8">
+                <div className="bg-gray-800/50 rounded-2xl p-8 border border-gray-700/50">
+                    <h3 className="text-2xl font-bold text-red-400 mb-6 flex items-center gap-3">
+                      <span className="bg-red-400/10 text-red-400 w-8 h-8 rounded-full flex items-center justify-center text-sm">1</span>
+                      RAW DIAGNOSIS
+                    </h3>
+                    <p className="text-gray-300 mb-6 text-lg">Which of the three centers is bleeding MOST today?</p>
                     
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[
                   { id: 'head' as CenterType, label: 'Head', icon: '🧠', ringColor: 'ring-blue-400', bgColor: 'bg-blue-900' },
                   { id: 'heart' as CenterType, label: 'Heart', icon: '💔', ringColor: 'ring-red-400', bgColor: 'bg-red-900' },
@@ -203,23 +216,26 @@ const ExamSection: React.FC<ExamSectionProps> = ({ onEvaluationComplete }) => {
                     type="button"
                     onClick={() => setBleeding(item.id)}
                     aria-pressed={bleeding === item.id}
-                    className={`flex items-center space-x-3 p-3 ${item.bgColor} bg-opacity-20 rounded-lg cursor-pointer transition-all duration-200 ring-2 focus:outline-none focus:ring-offset-2 focus:ring-offset-gray-900 ${bleeding === item.id ? item.ringColor : 'ring-transparent hover:bg-opacity-30'}`}
+                    className={`flex flex-col items-center gap-4 p-6 ${item.bgColor} bg-opacity-20 rounded-2xl cursor-pointer transition-all duration-300 ring-2 focus:outline-none focus:ring-offset-4 focus:ring-offset-gray-900 ${bleeding === item.id ? item.ringColor + ' scale-105 bg-opacity-40 shadow-lg' : 'ring-transparent hover:bg-opacity-30'}`}
                   >
-                    <span className="text-xl" aria-hidden="true">{item.icon}</span>
-                    <span className="font-bold text-gray-300">{item.label}</span>
+                    <span className="text-4xl" aria-hidden="true">{item.icon}</span>
+                    <span className="font-bold text-gray-200 text-lg">{item.label}</span>
                   </button>
                 ))}
               </div>
                 </div>
 
-                <div className="bg-gray-800 rounded-xl p-6">
-                    <h3 className="text-xl font-bold text-red-400 mb-4">2. CONSCIOUS SACRIFICE</h3>
-                    <p className="text-gray-300 mb-4">Which center has to give in TODAY so the other two survive?</p>
+                <div className="bg-gray-800/50 rounded-2xl p-8 border border-gray-700/50">
+                    <h3 className="text-2xl font-bold text-red-400 mb-6 flex items-center gap-3">
+                      <span className="bg-red-400/10 text-red-400 w-8 h-8 rounded-full flex items-center justify-center text-sm">2</span>
+                      CONSCIOUS SACRIFICE
+                    </h3>
+                    <p className="text-gray-300 mb-6 text-lg">Which center has to give in TODAY so the other two survive?</p>
                     
               <select
                 value={sacrifice}
                 onChange={e => setSacrifice(e.target.value as CenterType)}
-                className="w-full bg-black bg-opacity-50 text-white p-3 rounded-lg border border-red-600 focus:ring-2 focus:ring-red-400 focus:border-red-400 transition-all"
+                className="w-full bg-black/60 text-white p-4 rounded-xl border border-red-600/50 focus:ring-2 focus:ring-red-400 focus:border-red-400 transition-all text-lg"
               >
                 <option value="">Choose today's sacrifice...</option>
                 <option value="head">Head: Accept chaos, stop controlling</option>
@@ -228,55 +244,61 @@ const ExamSection: React.FC<ExamSectionProps> = ({ onEvaluationComplete }) => {
               </select>
                 </div>
 
-                <div className="bg-gray-800 rounded-xl p-6">
-                    <h3 className="text-xl font-bold text-red-400 mb-4">3. SURVIVAL OXYGEN</h3>
-                    <p className="text-gray-300 mb-4">What minimal action can give oxygen to the most drowned center?</p>
+                <div className="bg-gray-800/50 rounded-2xl p-8 border border-gray-700/50">
+                    <h3 className="text-2xl font-bold text-red-400 mb-6 flex items-center gap-3">
+                      <span className="bg-red-400/10 text-red-400 w-8 h-8 rounded-full flex items-center justify-center text-sm">3</span>
+                      SURVIVAL OXYGEN
+                    </h3>
+                    <p className="text-gray-300 mb-6 text-lg">What minimal action can give oxygen to the most drowned center?</p>
                     
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {OXYGEN_OPTIONS.map(opt => (
-                        <label key={opt} className={`flex items-center space-x-3 p-3 rounded-lg cursor-pointer transition-colors ${oxygen.includes(opt) ? 'bg-red-900 bg-opacity-40 border border-red-600' : 'bg-gray-700'}`}>
+                        <label key={opt} className={`flex items-center space-x-4 p-4 rounded-xl cursor-pointer transition-all border ${oxygen.includes(opt) ? 'bg-red-900/40 border-red-600 shadow-inner' : 'bg-gray-700/50 border-transparent hover:bg-gray-700'}`}>
                             <input
                               type="checkbox"
                               checked={oxygen.includes(opt)}
                               onChange={() => handleOxygenChange(opt)}
-                              className="w-5 h-5 text-red-500 bg-gray-800 border-gray-600 rounded focus:ring-red-500 accent-red-500"
+                              className="w-6 h-6 text-red-500 bg-gray-800 border-gray-600 rounded-lg focus:ring-red-500 accent-red-500"
                             />
-                            <span className="text-sm text-gray-300">{opt}</span>
+                            <span className="text-gray-200">{opt}</span>
                         </label>
                       ))}
                     </div>
                 </div>
             </div>
 
-            <div className="mt-8 p-6 bg-red-900 bg-opacity-20 border border-red-700 rounded-xl">
-                <h3 className="text-xl font-bold text-yellow-400 mb-4">💎 RAW INTEGRATION</h3>
+            <div className="mt-12 p-8 bg-red-900/10 border-2 border-yellow-600/30 rounded-3xl shadow-inner">
+                <h3 className="text-2xl font-black text-yellow-500 mb-6 flex items-center gap-3">
+                  <span className="text-3xl">💎</span>
+                  RAW INTEGRATION
+                </h3>
                 <textarea 
                     id="synthesis-text"
                     value={synthesis}
                     onChange={e => setSynthesis(e.target.value)}
                     placeholder='Write your realistic synthesis. Example: "Today the body bleeds most. I will sacrifice mental control (head) to give 10 minutes of rest to the body. The heart will wait until tomorrow."'
-                    className="w-full h-32 bg-black bg-opacity-50 border border-yellow-600 rounded-lg p-4 text-white focus:outline-none resize-none focus:ring-2 focus:ring-yellow-400 transition-all"
+                    className="w-full h-40 bg-black/40 border border-yellow-600/50 rounded-2xl p-6 text-white text-lg focus:outline-none resize-none focus:ring-2 focus:ring-yellow-400/50 transition-all placeholder:text-gray-600"
                 ></textarea>
                 
-            <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-6">
               <button
                 onClick={handleAcceptReality}
                 disabled={loading}
-                className="w-full sm:w-auto bg-red-700 hover:bg-red-800 text-white font-bold py-3 px-8 rounded-lg transition-all pulse-realidad disabled:bg-gray-700 disabled:cursor-not-allowed disabled:animate-none"
+                className="w-full sm:w-auto bg-red-700 hover:bg-red-600 text-white font-black py-4 px-10 rounded-2xl transition-all pulse-realidad disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed disabled:animate-none shadow-xl transform hover:-translate-y-1 active:translate-y-0"
               >
                 💀 ACCEPT REALITY
               </button>
               <button
                 onClick={handleAnalyzeSynthesis}
                 disabled={loading || !synthesis.trim()}
-                className="w-full sm:w-auto bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-3 px-8 rounded-lg transition-all disabled:bg-gray-700 disabled:cursor-not-allowed"
+                className="w-full sm:w-auto bg-yellow-600 hover:bg-yellow-500 text-black font-black py-4 px-10 rounded-2xl transition-all disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed shadow-xl transform hover:-translate-y-1 active:translate-y-0"
               >
-                🔬 ANALYZE SYNTHESIS
+                🔬 ANALYZE
               </button>
               <button
                 onClick={handleSaveEvaluation}
                 disabled={loading || !bleeding || !sacrifice || !synthesis.trim()}
-                className="w-full sm:w-auto bg-green-700 hover:bg-green-800 text-white font-bold py-3 px-8 rounded-lg transition-all disabled:bg-gray-700 disabled:cursor-not-allowed"
+                className="w-full sm:w-auto bg-green-700 hover:bg-green-600 text-white font-black py-4 px-10 rounded-2xl transition-all disabled:bg-gray-800 disabled:text-gray-500 disabled:cursor-not-allowed shadow-xl transform hover:-translate-y-1 active:translate-y-0"
               >
                 💾 SAVE
               </button>

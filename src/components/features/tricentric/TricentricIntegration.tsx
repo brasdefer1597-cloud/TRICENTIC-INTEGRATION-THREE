@@ -74,7 +74,7 @@ export default function TricentricIntegration({ kofiUrl }: Props) {
     setBreathingPhase('inhale');
   };
 
-  const finalizePractice = async () => {
+    const finalizePractice = async () => {
     if (!userId) {
       alert('Please log in to save your progress.');
       return;
@@ -83,27 +83,20 @@ export default function TricentricIntegration({ kofiUrl }: Props) {
     setLoading(true);
 
     try {
+      // Increment XP
       const { error: profileError } = await supabase.rpc('increment_xp', {
         amount: 50,
         u_id: userId,
       });
 
-      if (profileError) {
-        throw profileError;
-      }
+      if (profileError) throw profileError;
 
-      const { data: achievement } = await supabase
-        .from('achievements')
-        .select('id')
-        .eq('title', 'Tricentric Earthquake')
-        .single();
+      // Trigger achievement logic
+      const { error: achievementError } = await supabase.rpc('tricentric_earthquake', {
+        u_id: userId,
+      });
 
-      if (achievement) {
-        await supabase.from('user_achievements').upsert({
-          user_id: userId,
-          achievement_id: achievement.id,
-        });
-      }
+      if (achievementError) console.error('Achievement error:', achievementError);
 
       await refreshProfile();
 
